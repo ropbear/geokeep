@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>geokeep</title>
+  <script src="Cesium/Cesium.js"></script>
+  <link href="Cesium/Widgets/widgets.css" rel="stylesheet">
+  <style>
+    html, body, #cesiumContainer { margin: 0; padding: 0; width: 100%; height: 100%; }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 999;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 5px;
+      font-family: sans-serif;
+      max-height: 90%;
+      overflow-y: auto;
+    }
+    #infobox {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      max-width: 250px;
+      display: none;
+      z-index: 1000;
+    }
+    a {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+
+  <div id="controls">
+    <strong>Select GeoJSON Layers:</strong><br/>
+    <div id="geojsonCheckboxes"></div>
+  </div>
+
+  <div id="infobox">
+  </div>
+
+  <script>
+    // Imagery Provider
+    const imageryProvider = new Cesium.UrlTemplateImageryProvider({
+      url: "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      //url: "/maps/{z}/{x}/{y}.png",
+      maximumLevel: 17,
+      credit: 'CartoDB',
+      tilingScheme: new Cesium.WebMercatorTilingScheme(),
+      tileWidth: 256,
+      tileHeight: 256
+    });
+
+    imageryProvider.errorEvent.addEventListener(function(error) {
+      console.error("Tile load error:", error);
+    });
+
+    // Viewer
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+      imageryProvider: imageryProvider,
+      baseLayerPicker: false,
+      geocoder: false,
+      animation: false,
+      timeline: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      infoBox: false
+    });
+
+    // Add imagery provider to viewer
+    viewer.imageryLayers.addImageryProvider(imageryProvider);
+    const container = document.getElementById("geojsonCheckboxes");
+    const dataSources = {};
+
+    // Change scroll speed
+    viewer.scene.screenSpaceCameraController.wheelZoomRate = 3.0;
+
+    // Fetch geojson file list
+    fetch("/geojson/")
+      .then(r => r.text())
+      .then(html => {
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const files = [...doc.querySelectorAll("a")]
+          .map(a => a.getAttribute("href"))
+          .filter(name => name.endsWith(".geojson"));
+
+        for (const file of files) {
+          const label = document.createElement("label");
+          label.style.display = "block";
+
+          var fileName = file.split('.geojson')[0];
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.value = fileName;
+
+          checkbox.addEventListener("change", () => {
+            (async function () {
+              const geojsonUrl = "/geojson/" + file;
+              const response = await fetch(geojsonUrl);
+              const geojson = await response.json();
+              const htmlColor = geojson.markerColor || '#FFFFFF';
+              if (checkbox.checked) {
+                Cesium.GeoJsonDataSource.load(geojson, {
+                  clampToGround: true
+                }).then(ds => {
+                  var entities = ds.entities.values;
+                  for (var i = 0; i < entities.length; i++) {
+                      var entity = entities[i];
+                      entity.billboard = undefined;
+                      entity.point = new Cesium.PointGraphics({
+                          color: Cesium.Color.fromCssColorString(htmlColor),
+                          pixelSize: 5
+                      });
+                  }
+                  dataSources[file] = ds;
+                  viewer.dataSources.add(ds);
+                });
+              } else if (dataSources[file]) {
+                viewer.dataSources.remove(dataSources[file], true);
+                delete dataSources[file];
+              }
+            })();
+          });
+
+          label.appendChild(checkbox);
+          label.append(" " + fileName);
+          container.appendChild(label);
+        }
+      });
+
+    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+    handler.setInputAction(function(click) {
+        const pickedObject = viewer.scene.pick(click.position);
+
+        if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id)) {
+            const entity = pickedObject.id;
+            const properties = entity.properties;
+
+            let content = `<strong>${entity.name || 'Feature'}</strong><br><br>`;
+            content += `<strong>Name:</strong><br>${properties['name']}<br>`;
+
+            const infoBox = document.getElementById("infobox");
+            infoBox.innerHTML = content;
+            infoBox.style.display = 'block';
+        } else {
+            // Clicked on empty space — hide the box
+            document.getElementById("infobox").style.display = 'none';
+        }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+  </script>
+</body>
+</html>
+

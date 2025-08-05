@@ -1,0 +1,59 @@
+{
+  "type": "FeatureCollection",
+  "name": "Points",
+  "markerColor": "#80ffff",
+  "marker": "",
+  "features": [
+    {
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-72.5450, -13.1631]
+      },
+      "type": "Feature",
+      "properties": {
+        "name": "Machu Picchu"
+      }
+    },
+    {
+      "geometry": {
+        "type": "Point",
+        "coordinates": [35.4444, 30.3285]
+      },
+      "type": "Feature",
+      "properties": {
+        "name": "Petra"
+      }
+    },
+    {
+      "geometry": {
+        "type": "Point",
+        "coordinates": [78.0421, 27.1751]
+      },
+      "type": "Feature",
+      "properties": {
+        "name": "Taj Mahal"
+      }
+    },
+    {
+      "geometry": {
+        "type": "Point",
+        "coordinates": [12.4922, 41.8902]
+      },
+      "type": "Feature",
+      "properties": {
+        "name": "Colosseum"
+      }
+    },
+    {
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-43.2105, -22.9519]
+      },
+      "type": "Feature",
+      "properties": {
+        "name": "Christ the Redeemer"
+      }
+    }
+  ]
+}
+

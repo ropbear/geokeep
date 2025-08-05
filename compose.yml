@@ -1,0 +1,11 @@
+services:
+  geokeep:
+    build: .
+    image: geokeep:latest
+    container_name: geokeep
+    ports:
+      - "443:443"
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+    restart: "no"
+
