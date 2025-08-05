@@ -13,7 +13,7 @@ RUN apk add --no-cache openssl && \
     mkdir -p /etc/nginx/certs /usr/share/nginx/html /usr/share/nginx/cesium
 
 RUN apk add --no-cache shadow && \
-    usermod -u 1337 nginx
+    usermod -u 1000 nginx
 
 # Generate self-signed cert
 COPY generate-cert.sh /generate-cert.sh
